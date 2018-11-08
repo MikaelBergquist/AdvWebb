@@ -15,6 +15,10 @@ def list_solver (cards):
     for card in cards:
         result += str(digit_finder(card))
     return result
-        
-cards = ["12774212857X4109","586604X108627571","7473X86953606632","4026467X45830632","20X3092648604969"]
+
+cards = []
+with open("cards.txt", "r") as f:
+    for line in f:
+        cards.append(line.rstrip())
+
 print(list_solver(cards))
