@@ -1,4 +1,5 @@
 import struct
+import hashlib
 
 def hex_to_int (s):
     return int(s, 16)
@@ -22,8 +23,13 @@ def bytes_to_hex (b):
 	
 def hex_to_bytes (h):
     return bytearray.fromhex(h)
-	
-	
+
+
+def sha1_byte(byte_array):
+    if(type(byte_array)is int):
+        byte_array = int_to_byte(byte_array)
+    return hashlib.sha1(byte_array).digest()
+
 
 print ("hex2int:", hex_to_int ("fedcba9876543210"))
 print ("int2hex:", int_to_hex (18364758544493064720))
