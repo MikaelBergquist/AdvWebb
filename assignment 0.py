@@ -27,7 +27,7 @@ def hex_to_bytes (h):
 
 def sha1_byte(byte_array):
     if(type(byte_array)is int):
-        byte_array = int_to_byte(byte_array)
+        byte_array = int_to_bytes(byte_array)
     return hashlib.sha1(byte_array).digest()
 
 
@@ -38,3 +38,4 @@ print ("int2bytes:", int_to_bytes (500), int_to_bytes(-500))
 print ("bytes2hex:", bytes_to_hex (bytearray(b'\x00\x00\x01\xf4')))
 print ("hex2bytes:", hex_to_bytes ("0a"))
 print (bytes_to_hex(hex_to_bytes ("0a")))
+print (sha1_byte(bytearray(b'\x00\x00\x01\xf4')))
