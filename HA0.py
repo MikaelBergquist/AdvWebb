@@ -28,6 +28,8 @@ def hex_to_bytes (h):
 def sha1_byte(byte_array):
     if(type(byte_array)is int):
         byte_array = int_to_bytes(byte_array)
+    if(type(byte_array)is str):
+        byte_array = hex_to_bytes(byte_array)
     return hashlib.sha1(byte_array).digest()
 
 
