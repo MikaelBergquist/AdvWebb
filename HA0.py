@@ -25,9 +25,17 @@ def hex_to_bytes (h):
     return bytearray.fromhex(h)
 
 
-def sha1_byte(byte_array):
+def sha1_bytes (byte_array):
     if(type(byte_array)is int):
         byte_array = int_to_bytes(byte_array)
     if(type(byte_array)is str):
         byte_array = hex_to_bytes(byte_array)
     return hashlib.sha1(byte_array).digest()
+    
+def parse_file (file_path):
+    file = []
+    with open(file_path, "r") as f:
+        for line in f:
+            file.append(line.rstrip())
+    return file
+
