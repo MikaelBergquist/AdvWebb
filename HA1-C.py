@@ -38,14 +38,11 @@ class alice:
         self.id = 9
         self.n = n
         self.e = e
-        self.__r = 3
-        self.make_rinv()
         
     def generate_Bi (self, k):
-        self.__r = 3
-        self.make_rinv()
         l = []
         for i in range(0,2*k):
+            #form (ai,ci,di,ri)
             l.append((random.randint(0,self.n),random.randint(0,self.n),random.randint(0,self.n),random.randint(0,self.n)))
         return l
         
@@ -55,7 +52,7 @@ class alice:
     def blind (self, c):
         return c*self.__r**self.e%self.n
         
-    def make_rinv(self):
+    def rinv(self):
         self.__rinv = xgcd(self.__r, self.n)[1] % self.n
     
         
