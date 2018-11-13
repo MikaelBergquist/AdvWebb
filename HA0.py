@@ -10,11 +10,11 @@ def int_to_hex (i):
 	
 	
 def bytes_to_int (b):
-    return struct.unpack(">i", b)[0]
+    return int.from_bytes(b,'big')
 	
 	
 def int_to_bytes (i):
-    return struct.pack(">i", i)
+    return bytearray (i.to_bytes(10, 'big'))
 	
 	
 def bytes_to_hex (b):
@@ -22,6 +22,8 @@ def bytes_to_hex (b):
 	
 	
 def hex_to_bytes (h):
+    if h[1] == "x": h = h[2:]
+    if len(h)%2 == 1: h = "0"+h
     return bytearray.fromhex(h)
 
 
