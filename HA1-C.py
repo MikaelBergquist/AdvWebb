@@ -14,21 +14,11 @@ def h(x,y):
     return x^y
     
 def f(x,y):
-    return x^y
-    
-def randint():
-    return random.randint(0, 40)
-    
-def quads(n):
-    l = []
-    for i in range(0,n):
-        l.append((randint(),randint(),randint(),randint()))
-    return l
-    
+    return x*y
 
 def decrypt(m, b):
     return m**b.e%b.n
-    
+
 
 class bank:
     def __init__(self):
@@ -51,17 +41,20 @@ class alice:
         self.__r = 3
         self.make_rinv()
         
-    def quads (self, k):
+    def generate_Bi (self, k):
         self.__r = 3
         self.make_rinv()
         l = []
         for i in range(0,2*k):
             l.append((random.randint(0,self.n),random.randint(0,self.n),random.randint(0,self.n),random.randint(0,self.n)))
         return l
+        
     def unblind (self, c):
         return c*self.__rinv**self.e%self.n
+        
     def blind (self, c):
         return c*self.__r**self.e%self.n
+        
     def make_rinv(self):
         self.__rinv = xgcd(self.__r, self.n)[1] % self.n
     
