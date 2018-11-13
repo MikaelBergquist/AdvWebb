@@ -44,23 +44,36 @@ class bank:
         
         
 class alice:
-    def __init__(self):
+    def __init__(self, n, e):
         self.id = 9
+        self.n = n
+        self.e = e
+        self.__r = 3
+        self.make_rinv()
         
-    def quads (self, n):
+    def quads (self, k):
+        self.__r = 3
+        self.make_rinv()
         l = []
-        for i in range(0,2000):
-            l.append((random.randint(0,n).,random.randint(0,n),random.randint(0,n),random.randint(0,n)))
+        for i in range(0,2*k):
+            l.append((random.randint(0,self.n),random.randint(0,self.n),random.randint(0,self.n),random.randint(0,self.n)))
         return l
+    def unblind (self, c):
+        return c*self.__rinv**self.e%self.n
+    def blind (self, c):
+        return c*self.__r**self.e%self.n
+    def make_rinv(self):
+        self.__rinv = xgcd(self.__r, self.n)[1] % self.n
+    
+        
+        
         
     
     
     
 b = bank()
-a = alice()
-r = 3
-rinv = xgcd(r,b.n)[1]%b.n
-c = b.sign(10*r**b.e)
-print (c, c*rinv%b.n)
-q = quads(2000)
+a = alice(b.n, b.e)
+c = a.blind(10) 
+print (c)
+print(a.unblind(c))
 
