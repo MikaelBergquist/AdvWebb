@@ -28,8 +28,25 @@ def b_from_quad (qi, id, e, n):
     xi = h(ai, ci)
     yi = h(ai^id, di)
     #append r^3 f(xi,yi)
-    return (ri**e * f(xi,yi)) % n
+    return ((ri**e) * (f(xi,yi))) % n
+    
+def mod_inv(r, n):
+    return xgcd(r, n)[1] % n
 
+def select_indices(indices, l):
+    ret = []
+    for i in range(0,len(indices)):
+        ret.append(l[indices[i]])
+    return ret
+
+def invert_indices(l):
+    ret = []
+    for i in range(0,len(l)*2):
+        if(i not in l):
+            ret.append(i)
+    return ret
+    
+    
 class Bank:
     def __init__(self):
         p = 5
@@ -37,17 +54,19 @@ class Bank:
         self.n = p*q
         phi = (p-1)*(q-1)
         self.e = 7
-        self.d = xgcd(self.e,phi)[1]%phi #d = inverse of e mod n
-
+        self.d = mod_inv(self.e, self.n)
+        self.k = len(bin(p))+len(bin(q))-4
+        
     
     # choose and return half of indices from i..2k as R, save indices not in R as serial_indices
     def cut_and_choose(self, b):
         self.b = b
-        k = len(b)//2
-        self.r = list(range(0,len(b)))
+        self.r = list(range(0,2*self.k))
         self.serial_indices = []
-        for i in range(0,k):
+        for i in range(0,self.k):
             self.serial_indices.append(self.r.pop(random.randint(0, len(self.r)-1)))
+            
+        self.serial_indices.sort()
         return self.r
         
     def approve_and_make_coin (self, bi_in_r):
@@ -55,29 +74,28 @@ class Bank:
             quad = bi_in_r[i]
             # calculate and compare Bi:s with the ones alice generated.
             # note: alice's id is hardcoded as 9. In a real implementation this would be established before initiating coin withdrawal
-            if b_from_quad(quad, 9,self.e,self.n) != self.b[self.r[i]]:
+            if b_from_quad(quad, 9, self.e,self.n) != self.b[self.r[i]]:
                 print("check failed")
-                return
+                continue
         
         # generate blinded serial
         blinded_coin = []
         for i in self.serial_indices:
-            #print(i,self.b[i]**self.d%self.n)
             blinded_coin.append(((self.b[i]**self.d)) % self.n)
         return blinded_coin
         
 
 class Alice:
-    def __init__(self, e, n):
+    def __init__(self, e, n, k):
         self.id = 9
         self.n = n
         self.e = e
         #Save possible values of r into list
         self.poss_r = []
-        for i in range(2,n):
+        for i in range(1,k):
             if xgcd(i,n)[0] == 1: 
                 self.poss_r.append(i)
-                
+
                 
     def random_r(self):
         return self.poss_r[random.randint(0, len(self.poss_r)-1)]
@@ -86,35 +104,48 @@ class Alice:
     def generate_B (self, k):
         self.quads = []
         self.b = []
+        self.control_f = []
         for i in range(0,2*k):
             # generate and save (ai,ci,di,ri) to list quads
-            qi = (random.randint(0,self.n),random.randint(0,self.n),random.randint(0,self.n),self.random_r())
+            qi = (random.randint(1,k),random.randint(1,k),random.randint(1,k),self.random_r())
             self.quads.append(qi)
             
             # calculate Bi and save to b
             self.b.append(b_from_quad (qi, self.id, self.e, self.n))
+            
+            # save all f(xi,yi) for control purposes, not supposed to be in real implementation
+            (ai,ci,di,ri) = qi;
+            xi = h(ai, ci)
+            yi = h(ai^self.id, di)
+            self.control_f.append(f(xi,yi)%self.n)
+        
         return self.b
     
+    #
     def get_bi_in_r (self, r):
+        self.r_from_bank = r
         self.bi_in_r = []
         for i in range(0,len(r)):
             self.bi_in_r.append(self.quads[r[i]])
         return self.bi_in_r
-        
+    
+    #Unblinds coin by multiplying with inverse of ri mod n
     def unblind (self, c):
-        for q in self.bi_in_r:
-            r_inv = self.r_inv(q[3])
-            map(lambda x: x*(r_inv), c)
-        return c
+        coin_indices = invert_indices(self.r_from_bank)
+        coin = []
+        for i in range(0,len(c)):
+            index = coin_indices[i]
+            inv = mod_inv(self.quads[index][3], self.n)
+            coin.append(c[i]*inv%self.n)
+        return coin
         
-    def r_inv(self, r):
-        return xgcd(r, self.n)[1] % self.n
+
     
     
 #Instanciate bank and Alice with Alice knowing banks public exponent e and n
 bank = Bank()
-alice = Alice(bank.e, bank.n)
-k = 10
+alice = Alice(bank.e, bank.n, bank.k)
+k = bank.k
 #alice generates B
 b = alice.generate_B(k)
 
@@ -129,6 +160,20 @@ blinded_coin = bank.approve_and_make_coin(br)
 
 # alice unblinds coin
 coin = alice.unblind(blinded_coin)
-
-print(coin)
+rinv = select_indices(invert_indices(r), list(map(lambda x:mod_inv(x[3], 55), alice.quads)))
+print("e:",bank.e,"d:",bank.d,"n:", bank.n)
+print("r: ", select_indices(invert_indices(r), list(map(lambda x:x[3], alice.quads))))
+print("i: ", select_indices(invert_indices(r), list(map(lambda x:mod_inv(x[3], 55), alice.quads)))) #r_inv
+print("f: ", select_indices(invert_indices(r), alice.control_f))
+print("f^d", list(map(lambda x: x**8%55, select_indices(invert_indices(r), alice.control_f))))
+print("b: ", select_indices(invert_indices(r), b))
+r_list = select_indices(invert_indices(r), list(map(lambda x:x[3], alice.quads)))
+rinv_list = map(lambda x, n=bank.n: mod_inv(x,n),r_list)
+bc = list(map(lambda x, n=bank.n,e=bank.e,d=bank.d: ((x[0]**e)*x[1])**d %n, zip(r_list, select_indices(invert_indices(r), alice.control_f))))
+print("bc:", bc)
+print("c:", list(map(lambda x, n=bank.n: x[0]*x[1]%n,zip(rinv_list,bc))))
+print(" ---------- prog ------------")
+print("b:", select_indices(invert_indices(r),b))
+print("bc:", blinded_coin)
+print("c: ", list(map(lambda x: (x[0]*x[1])%55, zip(rinv, blinded_coin))))
 
