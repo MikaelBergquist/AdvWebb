@@ -22,73 +22,113 @@ def f(x,y):
 
 def decrypt(m, b):
     return m**b.e%b.n
+def b_from_quad (qi, id, e, n):
+    #calculate bi from quad i
+    (ai,ci,di,ri) = qi;
+    xi = h(ai, ci)
+    yi = h(ai^id, di)
+    #append r^3 f(xi,yi)
+    return (ri**e * f(xi,yi)) % n
 
-
-class bank:
+class Bank:
     def __init__(self):
         p = 5
         q = 11
         self.n = p*q
         phi = (p-1)*(q-1)
         self.e = 7
-        self.__d = xgcd(self.e,phi)[1]%phi
+        self.d = xgcd(self.e,phi)[1]%phi #d = inverse of e mod n
+
     
-    def sign(self, b):
-        map(lambda x: x**self.__d % self.n, b)
-        return b
+    # choose and return half of indices from i..2k as R, save indices not in R as serial_indices
+    def cut_and_choose(self, b):
+        self.b = b
+        k = len(b)//2
+        self.r = list(range(0,len(b)))
+        self.serial_indices = []
+        for i in range(0,k):
+            self.serial_indices.append(self.r.pop(random.randint(0, len(self.r)-1)))
+        return self.r
         
+    def approve_and_make_coin (self, bi_in_r):
+        for i in range(0, len(bi_in_r)):
+            quad = bi_in_r[i]
+            # calculate and compare Bi:s with the ones alice generated.
+            # note: alice's id is hardcoded as 9. In a real implementation this would be established before initiating coin withdrawal
+            if b_from_quad(quad, 9,self.e,self.n) != self.b[self.r[i]]:
+                print("check failed")
+                return
         
-class alice:
+        # generate blinded serial
+        blinded_coin = []
+        for i in self.serial_indices:
+            #print(i,self.b[i]**self.d%self.n)
+            blinded_coin.append(((self.b[i]**self.d)) % self.n)
+        return blinded_coin
+        
+
+class Alice:
     def __init__(self, e, n):
         self.id = 9
         self.n = n
         self.e = e
         #Save possible values of r into list
-        self.r = []
+        self.poss_r = []
         for i in range(2,n):
             if xgcd(i,n)[0] == 1: 
-                self.r.append(i)
+                self.poss_r.append(i)
+                
+                
     def random_r(self):
-        return self.r[random.randint(0,len(self.r)-1)]
+        return self.poss_r[random.randint(0, len(self.poss_r)-1)]
         
         
     def generate_B (self, k):
         self.quads = []
-        b = []
+        self.b = []
         for i in range(0,2*k):
-            # save tuple on form (ai,ci,di,ri) to quads
+            # generate and save (ai,ci,di,ri) to list quads
             qi = (random.randint(0,self.n),random.randint(0,self.n),random.randint(0,self.n),self.random_r())
             self.quads.append(qi)
             
-            #calculate bi from quad i
-            (ai,ci,di,ri) = qi;
-            xi = h(ai, ci)
-            yi = h(ai^self.id, di)
-            #append r^3 f(xi,yi)
-            b.append((ri**self.e * f(xi,yi)) % self.n)
-        return b
+            # calculate Bi and save to b
+            self.b.append(b_from_quad (qi, self.id, self.e, self.n))
+        return self.b
+    
+    def get_bi_in_r (self, r):
+        self.bi_in_r = []
+        for i in range(0,len(r)):
+            self.bi_in_r.append(self.quads[r[i]])
+        return self.bi_in_r
         
     def unblind (self, c):
-        for i in range(0, len(c)):
-            r = self.quads[i][3]
-            rinv = self.rinv(r)
-            c[i] = (c[i] * rinv) % self.n
+        for q in self.bi_in_r:
+            r_inv = self.r_inv(q[3])
+            map(lambda x: x*(r_inv), c)
         return c
         
-    def rinv(self, r):
+    def r_inv(self, r):
         return xgcd(r, self.n)[1] % self.n
     
     
-        
-        
-    
-    
-    
-b = bank()
-a = alice(b.e, b.n)
-bi = a.generate_B(10)
-# alice sends B to bank
-signed = b.sign(bi)
+#Instanciate bank and Alice with Alice knowing banks public exponent e and n
+bank = Bank()
+alice = Alice(bank.e, bank.n)
+k = 10
+#alice generates B
+b = alice.generate_B(k)
 
-print(a.unblind(signed))
+# alice sends B to bank and bank chooses a random half of the indices
+r = bank.cut_and_choose(b)
+
+#bank sends indices to alice extracts all Bi:s with indexes R
+br  = alice.get_bi_in_r(r)
+
+# Alice sends these Bi:s to the bank. If correct bank calculates and returns blinded coin
+blinded_coin = bank.approve_and_make_coin(br)
+
+# alice unblinds coin
+coin = alice.unblind(blinded_coin)
+
+print(coin)
 

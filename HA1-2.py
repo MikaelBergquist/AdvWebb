@@ -30,7 +30,7 @@ def avg_simulation (u,k,c,target):
     return (statistics.mean(temp), 3.66*statistics.stdev(temp)/math.sqrt(len(temp)))
 
 start_time = time.time()
-
-print(avg_simulation(20,7,10000,4783))
+#  (u,k,c,target)
+print(avg_simulation(18,7,100,3103))
 
 print("simulation time:", time.time()-start_time)
