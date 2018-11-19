@@ -1,5 +1,6 @@
 import random
 import HA0
+from functools import reduce
 
 #Extended Euclidian Algorithm
 #taken from https://en.wikibooks.org/wiki/Algorithm_Implementation/Mathematics/Extended_Euclidean_algorithm#Python
@@ -49,12 +50,12 @@ def invert_indices(l):
     
 class Bank:
     def __init__(self):
-        p = 5
-        q = 11
+        p = 89
+        q = 73
         self.n = p*q
         phi = (p-1)*(q-1)
-        self.e = 7
-        self.d = mod_inv(self.e, self.n)
+        self.e = 127
+        self.d = mod_inv(self.e, phi)
         self.k = len(bin(p))+len(bin(q))-4
         
     
@@ -137,7 +138,8 @@ class Alice:
             index = coin_indices[i]
             inv = mod_inv(self.quads[index][3], self.n)
             coin.append(c[i]*inv%self.n)
-        return coin
+        #return list(coin)
+        return reduce(lambda x, y: x*y, coin)%self.n
         
 
     
@@ -160,20 +162,25 @@ blinded_coin = bank.approve_and_make_coin(br)
 
 # alice unblinds coin
 coin = alice.unblind(blinded_coin)
-rinv = select_indices(invert_indices(r), list(map(lambda x:mod_inv(x[3], 55), alice.quads)))
+rinv = select_indices(invert_indices(r), list(map(lambda x:mod_inv(x[3], bank.n), alice.quads)))
 print("e:",bank.e,"d:",bank.d,"n:", bank.n)
 print("r: ", select_indices(invert_indices(r), list(map(lambda x:x[3], alice.quads))))
-print("i: ", select_indices(invert_indices(r), list(map(lambda x:mod_inv(x[3], 55), alice.quads)))) #r_inv
+print("i: ", select_indices(invert_indices(r), list(map(lambda x:mod_inv(x[3], bank.n), alice.quads)))) #r_inv
 print("f: ", select_indices(invert_indices(r), alice.control_f))
-print("f^d", list(map(lambda x: x**8%55, select_indices(invert_indices(r), alice.control_f))))
+#print("f^d ", list(map(lambda x: (x**bank.d)%bank.n, select_indices(invert_indices(r), alice.control_f))))
+print("f^d", reduce(lambda x,y: x*y, map(lambda x: x**bank.d, select_indices(invert_indices(r), alice.control_f)))%bank.n)
 print("b: ", select_indices(invert_indices(r), b))
 r_list = select_indices(invert_indices(r), list(map(lambda x:x[3], alice.quads)))
-rinv_list = map(lambda x, n=bank.n: mod_inv(x,n),r_list)
-bc = list(map(lambda x, n=bank.n,e=bank.e,d=bank.d: ((x[0]**e)*x[1])**d %n, zip(r_list, select_indices(invert_indices(r), alice.control_f))))
+bc = list(map(lambda x, n=bank.n,e=bank.e,d=bank.d: (((x[0]**e)*x[1])**d)%n, zip(r_list, select_indices(invert_indices(r), alice.control_f))))
 print("bc:", bc)
-print("c:", list(map(lambda x, n=bank.n: x[0]*x[1]%n,zip(rinv_list,bc))))
+#print("bc:", reduce(lambda x,y: x*y, bc)%bank.n)
+prod_inv = reduce(lambda x,y,n=bank.n: (x*y)%n, rinv)
+print("c: ", ( prod_inv * reduce(lambda x,y: x*y, bc))%bank.n)
+#print("c: ", list(map(lambda x: (x[0]*x[1])%bank.n, zip(rinv, bc))))
+
 print(" ---------- prog ------------")
 print("b:", select_indices(invert_indices(r),b))
 print("bc:", blinded_coin)
-print("c: ", list(map(lambda x: (x[0]*x[1])%55, zip(rinv, blinded_coin))))
+#print("c: ", list(map(lambda x: (x[0]*x[1])%bank.n, zip(rinv, blinded_coin))))
+print("c: ", alice.unblind(blinded_coin))
 
