@@ -50,11 +50,9 @@ def invert_indices(l):
     
 class Bank:
     def __init__(self):
-        p = 1021
-        q = 859
+        (p, q, self.e) = (1021, 859, 1277)
         self.n = p*q
         phi = (p-1)*(q-1)
-        self.e = 1277
         self.d = mod_inv(self.e, phi)
         self.k = len(bin(p))+len(bin(q))-4
         
@@ -76,8 +74,8 @@ class Bank:
             # calculate and compare Bi:s with the ones alice generated.
             # note: alice's id is hardcoded as 9. In a real implementation this would be established before initiating coin withdrawal
             if Bi_from_quad(quad, 9, self.e,self.n) != self.B[self.r[i]]:
-                print("check failed")
-                continue
+                print("id check failed")
+                return
         
         # generate blinded serial
         blinded_coin = 1
@@ -87,8 +85,8 @@ class Bank:
         
 
 class Alice:
-    def __init__(self, e, n, k):
-        self.id = 9
+    def __init__(self, e, n, k, id):
+        self.id = id
         self.n = n
         self.e = e
         #Save possible values of r into list
@@ -132,6 +130,8 @@ class Alice:
     
     # Unblinds coin by multiplying with inverse of ri and then taking mod n
     def unblind (self, c):
+        if c == None:
+            return
         # Indices not in R
         coin_indices = invert_indices(self.R_from_bank)
         
@@ -149,13 +149,13 @@ class Alice:
         
 
 # Creates a coin calculated using an approach that uses the real approach as well as a directly calculated control value    
-def create_coin_control ():
+def create_coin_control (alice_id):
 
     ### Simulated withdrawal of one coin ###
     
     #Instanciate bank and Alice with Alice knowing banks public exponent e and n
     bank = Bank()
-    alice = Alice(bank.e, bank.n, bank.k)
+    alice = Alice(bank.e, bank.n, bank.k, alice_id)
     k = bank.k
     #alice generates B
     b = alice.generate_B(k)
@@ -184,14 +184,16 @@ def create_coin_control ():
     
     # step3: calculate (product of all values from step2) mod n
     control = reduce(lambda x,y: x*y, fd) % bank.n
-    print(coin)
     return (coin, control)
 
     
-# Makes 100 coins and checks them against control value
-for i in range(0,1):
-    (coin, control) = create_coin_control()
+# Makes 2 coins and checks against control coin. 
+# First is generated using correct id for alice and the second an incorrect id and will fail (bank uses id = 9)
+for id in [9, 13]:
+    (coin, control) = create_coin_control(id)
     if coin != control:
-        print("failed")
+        print("failed comparison with control value")
+    else:
+        print(coin)
     
 
