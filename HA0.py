@@ -6,7 +6,7 @@ def hex_to_int (s):
 	
 	
 def int_to_hex (i):
-    return hex (i)
+    return hex (i)[2:]
 	
 	
 def bytes_to_int (b):

@@ -22,14 +22,14 @@ def f(x,y):
     return h(x,y)
 
 def decrypt(m, b):
-    return m**b.e%b.n
+    return pow(m,b.e,b.n)
 def Bi_from_quad (qi, id, e, n):
     #calculate Bi from quad i
     (ai,ci,di,ri) = qi;
     xi = h(ai, ci)
     yi = h(ai^id, di)
     #append r^3 f(xi,yi)
-    return ((ri**e) * (f(xi,yi))) % n
+    return (pow(ri,e,n) * (f(xi,yi))) % n
     
 def mod_inv(r, n):
     return xgcd(r, n)[1] % n
@@ -50,11 +50,11 @@ def invert_indices(l):
     
 class Bank:
     def __init__(self):
-        p = 89
-        q = 73
+        p = 1021
+        q = 859
         self.n = p*q
         phi = (p-1)*(q-1)
-        self.e = 127
+        self.e = 1277
         self.d = mod_inv(self.e, phi)
         self.k = len(bin(p))+len(bin(q))-4
         
@@ -64,7 +64,7 @@ class Bank:
         self.B = b
         self.r = list(range(0,2*self.k))
         self.serial_indices = []
-        for i in range(0,self.k):
+        for i in range(0, self.k):
             self.serial_indices.append(self.r.pop(random.randint(0, len(self.r)-1)))
             
         self.serial_indices.sort()
@@ -82,7 +82,7 @@ class Bank:
         # generate blinded serial
         blinded_coin = 1
         for i in self.serial_indices:
-            blinded_coin *= (((self.B[i]**self.d)) % self.n)
+            blinded_coin *= pow(self.B[i],self.d,self.n)
         return blinded_coin
         
 
@@ -180,16 +180,16 @@ def create_coin_control ():
     coin_f = select_indices(invert_indices(R), alice.control_f)
     
     # step2: calculate f^d mod n for all f in coin
-    fd = map(lambda x, d = bank.d, n = bank.n: x**d % n, coin_f)
+    fd = map(lambda x, d = bank.d, n = bank.n: pow(x,d,n), coin_f)
     
     # step3: calculate (product of all values from step2) mod n
     control = reduce(lambda x,y: x*y, fd) % bank.n
-    
+    print(coin)
     return (coin, control)
 
     
 # Makes 100 coins and checks them against control value
-for i in range(0,100):
+for i in range(0,1):
     (coin, control) = create_coin_control()
     if coin != control:
         print("failed")
