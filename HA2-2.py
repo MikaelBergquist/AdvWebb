@@ -15,16 +15,10 @@ def ip_to_int(ip):
     hex = reduce(lambda x, y: x+y, map(lambda x: "00"[len(x):]+x, l))
     return int(hex,16)
 
-mix_ip = b'85.14.156.21'
+adresses = []
+for i in range(0, len(capfile.packets)):
+    eth_frame = ethernet.Ethernet(capfile.packets[i].raw())
+    ip_packet = ip.IP(binascii.unhexlify(eth_frame.payload))
+    adresses.append((ip_to_int(ip_packet.src), ip_to_int(ip_packet.dst)))
 
-
-#for i in range(0, 1): #len(capfile.packets)):
-#    eth_frame = ethernet.Ethernet(capfile.packets[i].raw())
-#    ip_packet = ip.IP(binascii.unhexlify(eth_frame.payload))
-
-eth_frame = ethernet.Ethernet(capfile.packets[0].raw())
-ip_packet = ip.IP(binascii.unhexlify(eth_frame.payload))
-
-print(ip_packet.src)
-
-print(ip_to_int(mix_ip))
+print(adresses)
