@@ -18,7 +18,7 @@ def ip_to_int(ip):
 adresses = []
 for i in range(0, len(capfile.packets)):
     eth_frame = ethernet.Ethernet(capfile.packets[i].raw())
-    ip_packet = ip.IP(binascii.unhexlify(str(eth_frame.payload)[2:-1]))
+    ip_packet = ip.IP(HA0.hex_to_bytes(str(eth_frame.payload)[2:-1]))
     adresses.append((ip_to_int(ip_packet.src), ip_to_int(ip_packet.dst)))
 
 print(adresses)

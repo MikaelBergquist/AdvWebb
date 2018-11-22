@@ -14,7 +14,7 @@ def bytes_to_int (b):
 	
 	
 def int_to_bytes (i):
-    return bytearray (i.to_bytes(10, 'big'))
+    return bytes (i.to_bytes(10, 'big'))
 	
 	
 def bytes_to_hex (b):
@@ -24,7 +24,9 @@ def bytes_to_hex (b):
 def hex_to_bytes (h):
     if h[1] == "x": h = h[2:]
     if len(h)%2 == 1: h = "0"+h
-    return bytearray.fromhex(h)
+    if h[1] == "'": 
+        h = h[2:-1]
+    return bytes.fromhex(h)
 
 
 def sha1_bytes (byte_array):
